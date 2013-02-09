@@ -61,6 +61,24 @@ int score(const unsigned char *wordPattern, const unsigned char *onePointPattern
   return s;
 }
 
+int entrenched(const int i, const unsigned char *ownerships) {
+  int row = i / 5;
+  int col = i % 5;
+  if((row > 0) && (ownerships[i - 5] != ownerships[i])) {
+    return 0;
+  }
+  if((row < 4) && (ownerships[i + 5] != ownerships[i])) {
+    return 0;
+  }
+  if((col > 0) && (ownerships[i - 1] != ownerships[i])) {
+    return 0;
+  }
+  if((col < 4) && (ownerships[i + 1] != ownerships[i])) {
+    return 0;
+  }
+  return 1;
+}
+
 int pickMove(const unsigned char *index, const int dictionarySize, const unsigned char *board, const unsigned char *onePoint, const unsigned char *twoPoint) {
   unsigned char *boardPattern = calloc(26, 1);
   findIndex(board, boardPattern);
@@ -187,15 +205,22 @@ int main(int argc, char **argv) {
 	if(ownershipString[i] == ourSymbol) {
 	  tileValues[i] = 0;
 	}
-	else {
-	  onePoint[onePointOffset] = board[i];
-	  ++onePointOffset;
-	  tileValues[i] = 1;
-	  if(ownershipString[i] == theirSymbol) { // TODO: This currently ignores entrenched tiles
+	else if(ownershipString[i] == theirSymbol) {
+	  if(entrenched(i, ownershipString)) {
+	    tileValues[i] = 0;
+	  }
+	  else {
+	    onePoint[onePointOffset] = board[i];
+	    ++onePointOffset;
 	    twoPoint[twoPointOffset] = board[i];
 	    ++twoPointOffset;
 	    tileValues[i] = 2;
 	  }
+	}
+	else {
+	  onePoint[onePointOffset] = board[i];
+	  ++onePointOffset;
+          tileValues[i] = 1;
 	}
       }
       onePoint[onePointOffset] = 0;
