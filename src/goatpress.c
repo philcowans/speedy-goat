@@ -5,6 +5,15 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
+
+const char* positionStrings[] = {
+  "00", "01", "02", "03", "04",
+  "10", "11", "12", "13", "14",
+  "20", "21", "22", "23", "24",
+  "30", "31", "32", "33", "34",
+  "40", "41", "42", "43", "44"
+};
 
 int countBits(char b) {
   // Count the number of 1's in the binary representation of b - group
@@ -122,13 +131,20 @@ int main(int argc, char **argv) {
 
   char buffer[1024];
   int charsRead;
+  char *moveOffset;
 
-  while(charsRead = read(fd, buffer, 1024)) {
+  int started = 0;
+  char ourSymbol;
+  char theirSymbol;
+  
+  while(charsRead = read(fd, buffer, 1023)) {
+    buffer[charsRead] = 0; // Not sure if strings that come back from read will be null terminated or not.
+
     if(!strncmp(buffer, "goatpress<VERSION=1> ;", charsRead)) {
       // Do nothing
     }
     else if(!strncmp(buffer, "new game ;", charsRead)) {
-      // TODO
+      started = 0;
     }
     else if(!strncmp(buffer, "; name ?", charsRead)) {
       write(fd, "speedy-goat\n", 12);
@@ -136,11 +152,54 @@ int main(int argc, char **argv) {
     else if(!strncmp(buffer, "; ping ?", charsRead)) {
       write(fd, "pong\n", 5);
     }
-    else if(!strncmp(buffer, "; move ", 7)) { // TODO: This isn't right, there may be a prefixn ... 
-      // TODO: Parse board status
-      unsigned char *board = "abcdefghijklmnopqrstuvwxy";
-      unsigned char *onePoint = "abcde"; // Letters which we can claim (including those owned by the opponent, but not those locked in)
-      unsigned char *twoPoint = "abc"; // Letters which we can steal from the opponent
+    else if(moveOffset = strstr(buffer, "; move ")) {
+      if(!started) {
+	if(moveOffset == buffer) { // No previous move reported, so we are player 1
+	  ourSymbol = '1'; theirSymbol = '2';
+	}
+	else {
+	  ourSymbol = '2'; theirSymbol = '1';
+	}
+      }
+
+      moveOffset += 7; // Step over prefix;
+
+      unsigned char board[26];
+      for(int i = 0; i < 5; ++i) {
+	memcpy(board + i * 5, moveOffset, 5);
+	moveOffset += 6;
+      }
+      board[25] = 0;
+
+      unsigned char ownershipString[26];
+      for(int i = 0; i < 5; ++i) {
+	memcpy(ownershipString + i * 5, moveOffset, 5);
+	moveOffset += 6;	
+      }
+      ownershipString[25] = 0;
+
+      unsigned char onePoint[26];
+      unsigned char twoPoint[26];
+      int onePointOffset = 0;
+      int twoPointOffset = 0;
+      int tileValues[25];
+      for(int i = 0; i < 25; ++i) {
+	if(ownershipString[i] == ourSymbol) {
+	  tileValues[i] = 0;
+	}
+	else {
+	  onePoint[onePointOffset] = board[i];
+	  ++onePointOffset;
+	  tileValues[i] = 1;
+	  if(ownershipString[i] == theirSymbol) { // TODO: This currently ignores entrenched tiles
+	    twoPoint[twoPointOffset] = board[i];
+	    ++twoPointOffset;
+	    tileValues[i] = 2;
+	  }
+	}
+      }
+      onePoint[onePointOffset] = 0;
+      twoPoint[twoPointOffset] = 0;
       
       int move = pickMove(index, dictionarySize, board, onePoint, twoPoint);
       
@@ -148,8 +207,26 @@ int main(int argc, char **argv) {
 	write(fd, "pass\n", 5);
       }
       else {
-	// TODO: Return move
-	printf("Best word is %s\n", words + move * 26);
+	write(fd, "move:", 5);
+	int usedTiles[25];
+	memset(usedTiles, 0, sizeof(usedTiles));
+	for(int i = 0; i < strlen(words + move * 26); ++i) {
+	  char c = words[move * 26 + i];
+	  int maxPos = -1;
+	  int maxScore = -1;
+	  for(int j = 0; j < 25; ++j) {
+	    if((board[j] == c) && !usedTiles[j] && (tileValues[j] > maxScore)) {
+	      maxPos = j;
+	      maxScore = tileValues[j];
+	    }
+	  }
+	  usedTiles[maxPos] = 1;
+	  write(fd, positionStrings[maxPos], 2);
+	  if(i < (strlen(words + move * 26) - 1)) {
+	    write(fd, ",", 1);
+	  }
+	}
+	write(fd, "\n", 1);
       }
     }
     else {
