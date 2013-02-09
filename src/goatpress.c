@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
   char theirSymbol;
   
   while(charsRead = read(fd, buffer, 1023)) {
-    buffer[charsRead] = 0; // Not sure if strings that come back from read will be null terminated or not.
+    buffer[charsRead - 1] = 0; // Assume that response has a newline at the end
 
     if(!strncmp(buffer, "goatpress<VERSION=1> ;", charsRead)) {
       // Do nothing
@@ -264,4 +264,6 @@ int main(int argc, char **argv) {
 
   free(words);
   free(index);
+
+  return 0;
 };
