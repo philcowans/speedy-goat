@@ -121,19 +121,40 @@ int main(int argc, char **argv) {
   connect(fd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
   char buffer[1024];
+  int charsRead;
 
-  while(read(fd, buffer, 1024)) {
-    unsigned char *board = "abcdefghijklmnopqrstuvwxy";
-    unsigned char *onePoint = "abcde"; // Letters which we can claim (including those owned by the opponent, but not those locked in)
-    unsigned char *twoPoint = "abc"; // Letters which we can steal from the opponent
-    
-    int move = pickMove(index, dictionarySize, board, onePoint, twoPoint);
-    
-    if(move == -1) {
-      printf("No suitable move: pass");
+  while(charsRead = read(fd, buffer, 1024)) {
+    if(!strncmp(buffer, "goatpress<VERSION=1> ;", charsRead)) {
+      // Do nothing
+    }
+    else if(!strncmp(buffer, "new game ;", charsRead)) {
+      // TODO
+    }
+    else if(!strncmp(buffer, "; name ?", charsRead)) {
+      write(fd, "speedy-goat\n", 12);
+    }
+    else if(!strncmp(buffer, "; ping ?", charsRead)) {
+      write(fd, "pong\n", 5);
+    }
+    else if(!strncmp(buffer, "; move ", 7)) { // TODO: This isn't right, there may be a prefixn ... 
+      // TODO: Parse board status
+      unsigned char *board = "abcdefghijklmnopqrstuvwxy";
+      unsigned char *onePoint = "abcde"; // Letters which we can claim (including those owned by the opponent, but not those locked in)
+      unsigned char *twoPoint = "abc"; // Letters which we can steal from the opponent
+      
+      int move = pickMove(index, dictionarySize, board, onePoint, twoPoint);
+      
+      if(move == -1) {
+	write(fd, "pass\n", 5);
+      }
+      else {
+	// TODO: Return move
+	printf("Best word is %s\n", words + move * 26);
+      }
     }
     else {
-      printf("Best word is %s\n", words + move * 26);
+      fprintf(stderr, "Received unexpected request");
+      exit(1);
     }
   }
 
