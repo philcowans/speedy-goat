@@ -178,6 +178,7 @@ int main(int argc, char **argv) {
 	else {
 	  ourSymbol = '2'; theirSymbol = '1';
 	}
+	started = 1;
       }
 
       moveOffset += 7; // Step over prefix;
