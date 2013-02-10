@@ -1,4 +1,4 @@
-= Speedy-goat
+# Speedy-goat
 
 This is a client for @danlucraft's goatpress server which we used for
 a Songkick dojo. The aim is to see whether it was feasible to scan the
