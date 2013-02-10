@@ -172,17 +172,7 @@ int main(int argc, char **argv) {
       write(fd, "pong\n", 5);
     }
     else if(moveOffset = strstr(buffer, "; move ")) {
-      if(!started) {
-	if(moveOffset == buffer) { // No previous move reported, so we are player 1
-	  ourSymbol = '1'; theirSymbol = '2';
-	}
-	else {
-	  ourSymbol = '2'; theirSymbol = '1';
-	}
-	started = 1;
-      }
-
-      // TODO: Parse opponent's move and log words already played, otherwise we may waste one (or more) goes against good players
+      char *originalMoveOffset = moveOffset; // Store this so we can go back and parse the opponent's move once we know the board.
 
       moveOffset += 7; // Step over prefix;
 
@@ -199,6 +189,38 @@ int main(int argc, char **argv) {
 	moveOffset += 6;	
       }
       ownershipString[25] = 0;
+
+      if(originalMoveOffset == buffer) { // No previous move reported, so we are player 1
+	if(!started) {
+	  ourSymbol = '1'; theirSymbol = '2';
+	}
+      }
+      else {
+	if(!started) {
+	  ourSymbol = '2'; theirSymbol = '1';
+	  // Parse what the opponent played, format is: opponent: move:01,40,02,12,31,13,04,14,20,03,41,32,00
+	  // TODO: There must be a better way of doing this!
+	  char *currentPosition = buffer + 15;
+	  char opponentsWord[26];
+	  char *opponentsWordPtr = opponentsWord;
+	  while(currentPosition < originalMoveOffset) {
+	    int row = *currentPosition - '0'; // ASCII arithmetic FTW
+	    int col = *(currentPosition + 1) - '0';
+	    currentPosition += 3;
+	    *opponentsWordPtr = board[row * 5 + col];
+	    ++opponentsWordPtr;
+	  }
+	  *opponentsWordPtr = 0;
+	  for(int i = 0; i < dictionarySize; ++i) {
+	    if(!strcmp(opponentsWord, words + i * 26)) {
+	      played[i] = 1;
+	      break;
+	    }
+	  }
+	}
+      }
+
+      started = 1;
 
       unsigned char onePoint[26];
       unsigned char twoPoint[26];
