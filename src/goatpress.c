@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
       }
       ownershipString[25] = 0;
 
-      if(originalMoveOffset == buffer) { // No previous move reported, so we are player 1
+      if(originalMoveOffset == (buffer + 1)) { // No previous move reported, so we are player 1
 	if(!started) {
 	  printf("Our symbol is 1\n");
 	  ourSymbol = '1'; theirSymbol = '2';
