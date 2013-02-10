@@ -7,6 +7,40 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+// TODOS:
+// - Investigate doing this in glib
+
+// start 'index' class
+
+struct index {
+  int size;
+  unsigned char *data;
+};
+
+void index_initialize(struct index *self, int _size) {
+  self->size = _size;
+  self->index = calloc(_size * 26, 1);
+}
+
+void index_free(struct index *self) {
+  free(self->index);
+}
+
+void index_build_from_dictionary(struct index *self, struct dictionary *d) {
+}
+
+int index_check_word(struct index *self, const unsigned char *word) {
+}
+
+int index_score_word(struct index *self, const unsigned char *word) {
+}
+
+// TODO: right format for static methods? private methods?
+void _index_find_entry(const unsigned char *word, unsigned char *indexEntry) {
+}
+
+// end 'index' class
+
 // start 'dictionary' class
 
 struct dictionary {
@@ -17,12 +51,10 @@ struct dictionary {
 
 void dictionary_initialize(struct dictionary *self, int _size) {
   self->size = _size;
-  self->index = calloc(_size * 26, 1);
   self->words = calloc(_size * 26, 1);
 }
 
 void dictionary_free(struct dictionary *self) {
-  free(self->index);
   free(self->words);
 }
 
