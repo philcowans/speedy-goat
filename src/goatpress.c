@@ -79,7 +79,7 @@ int entrenched(const int i, const unsigned char *ownerships) {
   return 1;
 }
 
-int pickMove(const unsigned char *index, const int dictionarySize, const unsigned char *board, const unsigned char *onePoint, const unsigned char *twoPoint) {
+int pickMove(const unsigned char *index, const int dictionarySize, const unsigned char *board, const unsigned char *onePoint, const unsigned char *twoPoint, int *played) {
   unsigned char *boardPattern = calloc(26, 1);
   findIndex(board, boardPattern);
 
@@ -93,7 +93,7 @@ int pickMove(const unsigned char *index, const int dictionarySize, const unsigne
   int maxIndex = -1;
 
   for(int i = 0; i < dictionarySize; ++i) {
-    if(check(index + 26 * i, boardPattern)) {
+    if(!played[i] && check(index + 26 * i, boardPattern)) {
       int s = score(index + 26 * i, onePointPattern, twoPointPattern);
       if(s > maxScore) {
 	maxScore = s;
@@ -116,6 +116,7 @@ int main(int argc, char **argv) {
   const int dictionarySize = 173529;
   unsigned char *index = calloc(dictionarySize * 26, 1);
   unsigned char *words = calloc(dictionarySize * 26, 1);
+  int *played = calloc(dictionarySize, sizeof(int));
 
   FILE *f = fopen("dictionary", "r");
 
@@ -181,6 +182,8 @@ int main(int argc, char **argv) {
 	started = 1;
       }
 
+      // TODO: Parse opponent's move and log words already played, otherwise we may waste one (or more) goes against good players
+
       moveOffset += 7; // Step over prefix;
 
       unsigned char board[26];
@@ -227,12 +230,13 @@ int main(int argc, char **argv) {
       onePoint[onePointOffset] = 0;
       twoPoint[twoPointOffset] = 0;
       
-      int move = pickMove(index, dictionarySize, board, onePoint, twoPoint);
+      int move = pickMove(index, dictionarySize, board, onePoint, twoPoint, played);
       
       if(move == -1) {
 	write(fd, "pass\n", 5);
       }
       else {
+	played[move] = 1;
 	write(fd, "move:", 5);
 	int usedTiles[25];
 	memset(usedTiles, 0, sizeof(usedTiles));
@@ -265,6 +269,7 @@ int main(int argc, char **argv) {
 
   free(words);
   free(index);
+  free(played);
 
   return 0;
 };
