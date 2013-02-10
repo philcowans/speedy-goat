@@ -7,6 +7,39 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+// start 'dictionary' class
+
+struct dictionary {
+  int size;
+  unsigned char *index;
+  unsigned char *words;
+};
+
+void dictionary_initialize(struct dictionary *self, int _size) {
+  self->size = _size;
+  self->index = calloc(_size * 26, 1);
+  self->words = calloc(_size * 26, 1);
+}
+
+void dictionary_free(struct dictionary *self) {
+  free(self->index);
+  free(self->words);
+}
+
+void dictionary_load_from_file(struct dictionary *self, const char *filename) {
+  FILE *f = fopen(filename, "r");
+
+  for(int i = 0; i < self->size; ++i) {
+    fgets(self->words + 26 * i, 26, f);
+    self->words[strlen(self->words + 26 * i) + 26 * i - 1] = 0;
+    findIndex(self->words + 26 * i, self->index + 26 * i);
+  }
+
+  fclose(f);  
+}
+
+// end 'dictionary' class
+
 const char* positionStrings[] = {
   "00", "01", "02", "03", "04",
   "10", "11", "12", "13", "14",
