@@ -113,12 +113,12 @@ int main(int argc, char **argv) {
   const char *host = "of1-dev-dan";
   int port = 4123;
 
-  const int dictionarySize = 173529;
+  const int dictionarySize = 210661;
   unsigned char *index = calloc(dictionarySize * 26, 1);
   unsigned char *words = calloc(dictionarySize * 26, 1);
   int *played = calloc(dictionarySize, sizeof(int));
 
-  FILE *f = fopen("dictionary", "r");
+  FILE *f = fopen("dict_osx", "r");
 
   for(int i = 0; i < dictionarySize; ++i) {
     fgets(words + 26 * i, 26, f);
@@ -167,6 +167,7 @@ int main(int argc, char **argv) {
     }
     else if(!strncmp(buffer, "new game ;", charsRead)) {
       started = 0;
+      memset(played, 0, dictionarySize * sizeof(int));
     }
     else if(!strncmp(buffer, "; name ?", charsRead)) {
       write(fd, "speedy\n", 7);
