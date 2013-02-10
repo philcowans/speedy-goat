@@ -111,7 +111,7 @@ int pickMove(const unsigned char *index, const int dictionarySize, const unsigne
 
 int main(int argc, char **argv) {
   const char *host = "of1-dev-dan";
-  int port = 5123;
+  int port = 4123;
 
   const int dictionarySize = 173529;
   unsigned char *index = calloc(dictionarySize * 26, 1);
@@ -156,19 +156,23 @@ int main(int argc, char **argv) {
   char ourSymbol;
   char theirSymbol;
   
-  while(charsRead = read(fd, buffer, 1023)) {
+  while(1) {
+    charsRead = read(fd, buffer, 1023);
     buffer[charsRead - 1] = 0; // Assume that response has a newline at the end
 
-    if(!strncmp(buffer, "goatpress<VERSION=1> ;", charsRead)) {
+    printf("Received: \"%s\"\n", buffer);
+
+    if(!strncmp(buffer, "goatpress<VERSION=1> ; ", charsRead)) {
       // Do nothing
     }
     else if(!strncmp(buffer, "new game ;", charsRead)) {
       started = 0;
     }
     else if(!strncmp(buffer, "; name ?", charsRead)) {
-      write(fd, "speedy-goat\n", 12);
+      write(fd, "speedy\n", 7);
     }
     else if(!strncmp(buffer, "; ping ?", charsRead)) {
+      printf("Replying to ping\n");
       write(fd, "pong\n", 5);
     }
     else if(moveOffset = strstr(buffer, "; move ")) {
@@ -192,11 +196,13 @@ int main(int argc, char **argv) {
 
       if(originalMoveOffset == buffer) { // No previous move reported, so we are player 1
 	if(!started) {
+	  printf("Our symbol is 1\n");
 	  ourSymbol = '1'; theirSymbol = '2';
 	}
       }
       else {
 	if(!started) {
+	  printf("Our symbol is 2\n");
 	  ourSymbol = '2'; theirSymbol = '1';
 	  // Parse what the opponent played, format is: opponent: move:01,40,02,12,31,13,04,14,20,03,41,32,00
 	  // TODO: There must be a better way of doing this!
@@ -255,11 +261,14 @@ int main(int argc, char **argv) {
       int move = pickMove(index, dictionarySize, board, onePoint, twoPoint, played);
       
       if(move == -1) {
+	printf("Passing\n");
 	write(fd, "pass\n", 5);
       }
       else {
 	played[move] = 1;
+	printf("Playing: %s\n", words + move * 26);
 	write(fd, "move:", 5);
+	printf("move:");
 	int usedTiles[25];
 	memset(usedTiles, 0, sizeof(usedTiles));
 	for(int i = 0; i < strlen(words + move * 26); ++i) {
@@ -274,15 +283,18 @@ int main(int argc, char **argv) {
 	  }
 	  usedTiles[maxPos] = 1;
 	  write(fd, positionStrings[maxPos], 2);
+	  printf("%s", positionStrings[maxPos]);
 	  if(i < (strlen(words + move * 26) - 1)) {
 	    write(fd, ",", 1);
+	    printf(",");
 	  }
 	}
 	write(fd, "\n", 1);
+	printf("\n");
       }
     }
     else {
-      fprintf(stderr, "Received unexpected request");
+      fprintf(stderr, "Received unexpected request: \"%s\"\n", buffer);
       exit(1);
     }
   }
